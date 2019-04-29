@@ -856,27 +856,24 @@ void rgblight_show_solid_color(uint8_t r, uint8_t g, uint8_t b) {
   rgblight_setrgb(r, g, b);
 }
 
+const uint8_t RGBLED_STATIC_INTERVALS[] PROGMEM = {100};
+
 static void rgblight_effect_dummy(animation_status_t *anim) {
-    // do nothing
-    /********
-    dprintf("rgblight_task() what happened?\n");
-    dprintf("is_static_effect %d\n", is_static_effect(rgblight_config.mode));
-    dprintf("mode = %d, base_mode = %d, timer_enabled %d, ",
-            rgblight_config.mode, rgblight_status.base_mode,
-            rgblight_status.timer_enabled);
-    dprintf("last_timer = %d\n",anim->last_timer);
-    **/
+  rgblight_sethsv_noeeprom_old(rgblight_config.hue, rgblight_config.sat, rgblight_config.val);
 }
 
 void rgblight_task(void) {
+
   if (rgblight_status.timer_enabled) {
     effect_func_t effect_func = rgblight_effect_dummy;
     uint16_t interval_time = 2000; // dummy interval
     uint8_t delta = rgblight_config.mode - rgblight_status.base_mode;
     animation_status.delta = delta;
 
-    // static light mode, do nothing here
-    if ( 1 == 0 ) { //dummy
+    // static light mode
+    if (rgblight_status.base_mode == RGBLIGHT_MODE_STATIC_LIGHT) {
+      interval_time = get_interval_time(&RGBLED_STATIC_INTERVALS[delta], 1, 100);
+      effect_func = rgblight_effect_dummy;
     }
 #ifdef RGBLIGHT_EFFECT_BREATHING
     else if (rgblight_status.base_mode == RGBLIGHT_MODE_BREATHING) {
@@ -1001,16 +998,28 @@ void rgblight_effect_rainbow_mood(animation_status_t *anim) {
   #define RGBLIGHT_RAINBOW_SWIRL_RANGE 360
 #endif
 
+const uint8_t ledMatrix[MATRIX_ROWS][MATRIX_COLS] = {
+  { 0, 1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11},
+  {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 99, 22},
+  {23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 99, 33},
+  {34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45}
+};
+
 __attribute__ ((weak))
-const uint8_t RGBLED_RAINBOW_SWIRL_INTERVALS[] PROGMEM = {100, 50, 20};
+const uint8_t RGBLED_RAINBOW_SWIRL_INTERVALS[] PROGMEM = {150, 60, 30};
 
 void rgblight_effect_rainbow_swirl(animation_status_t *anim) {
   uint16_t hue;
-  uint8_t i;
-
-  for (i = 0; i < RGBLED_NUM; i++) {
-    hue = (RGBLIGHT_RAINBOW_SWIRL_RANGE / RGBLED_NUM * i + anim->current_hue) % 360;
-    sethsv(hue, rgblight_config.sat, rgblight_config.val, (LED_TYPE *)&led[i]);
+  uint8_t i, j;
+  for (i = 0; i < MATRIX_COLS; i++) {
+    hue = (360 / MATRIX_COLS * i + anim->current_hue) % 360;
+    for (j = 0; j < MATRIX_ROWS; j++) {
+          uint8_t ledIndex = ledMatrix[j][i];
+          if (ledIndex > RGBLED_NUM) {
+            continue;
+          }
+          sethsv(hue, rgblight_config.sat, rgblight_config.val, (LED_TYPE *)&led[ledIndex]);
+    }
   }
   rgblight_set();
 
@@ -1158,29 +1167,12 @@ void rgblight_effect_christmas(animation_status_t *anim) {
 }
 #endif
 
-#ifdef RGBLIGHT_EFFECT_RGB_TEST
 __attribute__ ((weak))
-const uint16_t RGBLED_RGBTEST_INTERVALS[] PROGMEM = {1024};
+const uint8_t RGBLED_RGBTEST_INTERVALS[] PROGMEM = {200};
 
 void rgblight_effect_rgbtest(animation_status_t *anim) {
-  static uint8_t maxval = 0;
-  uint8_t g; uint8_t r; uint8_t b;
 
-  if( maxval == 0 ) {
-      LED_TYPE tmp_led;
-      sethsv(0, 255, RGBLIGHT_LIMIT_VAL, &tmp_led);
-      maxval = tmp_led.r;
-  }
-  g = r = b = 0;
-  switch( anim->pos ) {
-    case 0: r = maxval; break;
-    case 1: g = maxval; break;
-    case 2: b = maxval; break;
-  }
-  rgblight_setrgb(r, g, b);
-  anim->pos = (anim->pos + 1) % 3;
 }
-#endif
 
 #ifdef RGBLIGHT_EFFECT_ALTERNATING
 void rgblight_effect_alternating(animation_status_t *anim) {

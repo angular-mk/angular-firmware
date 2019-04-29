@@ -1,4 +1,8 @@
 #include "angularrgb.h"
+#include "rgblight.h"
+
+rgblight_status_t rgblight_status;
+rgblight_config_t rgblight_config;
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
@@ -18,6 +22,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 		KC_F1, KC_F2, KC_F3, KC_F4, KC_F5, KC_F6, KC_F7, KC_F8, KC_F9, KC_F10, KC_F11, KC_F12,
 		KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_DEL,
 		KC_TRNS, RGB_TOG, RGB_MOD, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+		KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS),
+
+	KEYMAP(
+		KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+		KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
+		KC_TRNS, RGB_TOG, RGB_MOD, RGB_HUI, RGB_HUD, RGB_SAI, RGB_VAI, RGB_VAD, KC_TRNS, KC_TRNS, KC_TRNS,
 		KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS)
 };
 
@@ -37,6 +47,35 @@ void matrix_scan_user(void) {
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+	//uint8_t layer = biton32(layer_state);
+	uint8_t row = record->event.key.row;
+	uint8_t col = record->event.key.col;
+
+	if (row == 3 && col == 9) {
+		if (record->event.pressed) {
+			rgblight_setrgb(100, 0, 0);
+			rgblight_status.timer_enabled = false;
+			dprint("Pressed");
+		} else {
+			dprint("Released");
+			rgblight_status.timer_enabled = true;
+		}
+	} else if (row == 3 && col == 10) {
+		if (record->event.pressed) {
+			rgblight_setrgb(0, 100, 0);
+			rgblight_status.timer_enabled = false;
+		} else {
+			rgblight_status.timer_enabled = true;
+		}
+	} else if (row == 3 && col == 11) {
+		if (record->event.pressed) {
+			rgblight_status.timer_enabled = false;
+			rgblight_setrgb(0, 0, 100);
+		} else {
+			rgblight_status.timer_enabled = true;
+		}
+	}
+
 	return true;
 }
 
